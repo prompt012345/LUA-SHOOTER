@@ -12,33 +12,41 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+
     steps:
-      - name: Checkout project
+      - name: Checkout LUA SHOOTER
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git cmake make wget zip \
-            python3 gettext tcl nodejs
+            python3 gettext tcl
 
-      - name: Download Luanti WebAssembly
+      - name: Clone Luanti WebAssembly
         run: |
           git clone --depth 1 \
+            --branch wasmgame \
             https://github.com/wasmga-me/luanti-wasm.git \
             luanti-wasm
 
-      - name: Compile browser engine
+      - name: Build Luanti
         run: |
           cd luanti-wasm
           bash wasmgame/build.sh "$RUNNER_TEMP/luanti-build"
 
-      - name: Save build
+      - name: Upload browser build
         uses: actions/upload-artifact@v4
         with:
-          name: lua-shooter-web
+          name: LUA-SHOOTER-WEB
           path: |
-            luanti-wasm/wasmgame/
-            luanti-wasm/r2/luanti/
+            luanti-wasm/luanti.js
+            luanti-wasm/luanti.wasm
+            ${{ runner.temp }}/luanti-build/r2/luanti/*.zip
           if-no-files-found: error
