@@ -1,0 +1,44 @@
+
+name: LUA SHOOTER - WebAssembly Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git cmake make wget zip \
+            python3 gettext tcl nodejs
+
+      - name: Download Luanti WebAssembly
+        run: |
+          git clone --depth 1 \
+            https://github.com/wasmga-me/luanti-wasm.git \
+            luanti-wasm
+
+      - name: Compile browser engine
+        run: |
+          cd luanti-wasm
+          bash wasmgame/build.sh "$RUNNER_TEMP/luanti-build"
+
+      - name: Save build
+        uses: actions/upload-artifact@v4
+        with:
+          name: lua-shooter-web
+          path: |
+            luanti-wasm/wasmgame/
+            luanti-wasm/r2/luanti/
+          if-no-files-found: error
