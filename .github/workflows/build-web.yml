@@ -1,10 +1,9 @@
-name: LUA SHOOTER - WebAssembly Build
+name: LUA SHOOTER - Build
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -14,52 +13,35 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout LUA SHOOTER
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git \
-            cmake \
-            make \
-            wget \
-            zip \
-            python3 \
-            gettext \
-            tcl
+          sudo apt-get install -y git cmake make wget zip python3 gettext tcl
 
-      - name: Inspect Luanti WebAssembly
-        run: |
-          git clone \
-            --branch wasmgame \
-            --single-branch \
-            https://github.com/wasmga-me/luanti-wasm.git \
-            luanti-wasm
-
-          echo "========== BRANCH =========="
-          git -C luanti-wasm branch --show-current
-
-          echo "========== FILES =========="
-          find luanti-wasm -maxdepth 4 -type f | sort
-
-          echo "========== BUILD SCRIPT =========="
-          if [ -f luanti-wasm/wasmgame/build.sh ]; then
-            sed -n '1,180p' luanti-wasm/wasmgame/build.sh
-          else
-            echo "ERREUR : build.sh introuvable"
-          fi
-
-      - name: Upload diagnostic
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          name: LUA-SHOOTER-DIAGNOSTIC
-          path: luanti-wasm/
-          if-no-files-found: warn
+          node-version: 24
+
+      - name: Get Luanti source and patches
+        run: |
+          git clone --branch wasmgame \
+            https://github.com/wasmga-me/luanti-wasm.git source
+
+          git clone https://github.com/paradust7/minetest-wasm.git minetest-wasm
+
+          git -C minetest-wasm checkout 5bfae52b53605b39667dfc29cddd59c861e38111
+
+          echo "Checking required patches..."
+          find source -name "*.diff" -o -name "*.patch"
+
+          echo "Checking source history..."
+          git -C source log --oneline -5
+
+      - name: Stop if patches are missing
+        run: |
+          echo "The patch files must be recovered before compilation."
+          exit 1
