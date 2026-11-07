@@ -4,7 +4,8 @@ name: LUA SHOOTER - WebAssembly Build
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -31,22 +32,32 @@ jobs:
 
       - name: Clone Luanti WebAssembly
         run: |
-          git clone --depth 1 \
+          git clone \
             --branch wasmgame \
+            --single-branch \
             https://github.com/wasmga-me/luanti-wasm.git \
             luanti-wasm
+
+          echo "Checking webport.diff..."
+          test -f luanti-wasm/wasmgame/webport.diff
+          ls -lh luanti-wasm/wasmgame/
 
       - name: Build Luanti
         run: |
           cd luanti-wasm
           bash wasmgame/build.sh "$RUNNER_TEMP/luanti-build"
 
-      - name: Upload browser build
+      - name: Verify build
+        run: |
+          test -f luanti-wasm/luanti.js
+          test -f luanti-wasm/luanti.wasm
+
+      - name: Upload WebAssembly
         uses: actions/upload-artifact@v4
         with:
           name: LUA-SHOOTER-WEB
           path: |
             luanti-wasm/luanti.js
             luanti-wasm/luanti.wasm
-            ${{ runner.temp }}/luanti-build/r2/luanti/*.zip
+            ${{ runner.temp }}/luanti-build/r2/luanti/
           if-no-files-found: error
