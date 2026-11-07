@@ -1,4 +1,3 @@
-
 name: LUA SHOOTER - WebAssembly Build
 
 on:
@@ -27,10 +26,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git cmake make wget zip \
-            python3 gettext tcl
+            git \
+            cmake \
+            make \
+            wget \
+            zip \
+            python3 \
+            gettext \
+            tcl
 
-      - name: Clone Luanti WebAssembly
+      - name: Inspect Luanti WebAssembly
         run: |
           git clone \
             --branch wasmgame \
@@ -38,26 +43,23 @@ jobs:
             https://github.com/wasmga-me/luanti-wasm.git \
             luanti-wasm
 
-          echo "Checking webport.diff..."
-          test -f luanti-wasm/wasmgame/webport.diff
-          ls -lh luanti-wasm/wasmgame/
+          echo "========== BRANCH =========="
+          git -C luanti-wasm branch --show-current
 
-      - name: Build Luanti
-        run: |
-          cd luanti-wasm
-          bash wasmgame/build.sh "$RUNNER_TEMP/luanti-build"
+          echo "========== FILES =========="
+          find luanti-wasm -maxdepth 4 -type f | sort
 
-      - name: Verify build
-        run: |
-          test -f luanti-wasm/luanti.js
-          test -f luanti-wasm/luanti.wasm
+          echo "========== BUILD SCRIPT =========="
+          if [ -f luanti-wasm/wasmgame/build.sh ]; then
+            sed -n '1,180p' luanti-wasm/wasmgame/build.sh
+          else
+            echo "ERREUR : build.sh introuvable"
+          fi
 
-      - name: Upload WebAssembly
+      - name: Upload diagnostic
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: LUA-SHOOTER-WEB
-          path: |
-            luanti-wasm/luanti.js
-            luanti-wasm/luanti.wasm
-            ${{ runner.temp }}/luanti-build/r2/luanti/
-          if-no-files-found: error
+          name: LUA-SHOOTER-DIAGNOSTIC
+          path: luanti-wasm/
+          if-no-files-found: warn
